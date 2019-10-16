@@ -4,8 +4,8 @@ import json
 
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QLabel, QLineEdit, QTabBar,
-                             QFrame, QStackedLayout)
-from PyQt5.QtGui import QIcon, QWindow, QImage
+                             QFrame, QStackedLayout, QTabWidget, QShortcut, QKeySequenceEdit,)
+from PyQt5.QtGui import QIcon, QWindow, QImage, QKeySequence
 from PyQt5.QtCore import *
 from PyQt5.QtWebEngineWidgets import *
 
@@ -26,6 +26,7 @@ class App(QFrame):
 		# self.setGeometry(0, 0, 1024, 768)
 		self.setBaseSize(1024, 768)
 		self.CreateApp()
+		self.setWindowIcon(QIcon("logo.png"))
 	
 	def CreateApp(self):
 		self.layout = QVBoxLayout()
@@ -38,6 +39,13 @@ class App(QFrame):
 		self.tabbar.setCurrentIndex(0)
 		self.tabbar.setDrawBase(False)
 		
+		self.shortcutNewTab = QShortcut(QKeySequence("Ctrl+T"), self)
+		self.shortcutNewTab.activated.connect(self.AddTab)
+		self.shortcutReload = QShortcut(QKeySequence("Ctrl+R"), self)
+		self.shortcutReload.activated.connect(self.ReloadPage)
+		# self.shortcutCloseTab = QShortcut(QKeySequence("Ctrl+W"), self)
+		# self.shortcutCloseTab.activated.connect(self.CloseTab)
+		
 		# Keep track of tabs
 		self.tabCount = 0
 		self.tabs = []
@@ -49,27 +57,26 @@ class App(QFrame):
 		
 		self.addressbar.returnPressed.connect(self.BrowseTo)
 		
-		# Set Toolbar Buttons
-		
-		self.BackButton = QPushButton("<")
-		self.BackButton.clicked.connect(self.GoBack)
-		
-		self.ForwardButton = QPushButton(">")
-		self.ForwardButton.clicked.connect(self.GoForward)
-		
-		self.ReloadButton = QPushButton("R")
-		self.ReloadButton.clicked.connect(self.ReloadPage)
-		# build Toolbar
-		self.Toolbar.setLayout(self.ToolbarLayout)
-		self.ToolbarLayout.addWidget(self.addressbar)
-		self.ToolbarLayout.addWidget(self.BackButton)
-		self.ToolbarLayout.addWidget(self.ForwardButton)
-		self.ToolbarLayout.addWidget(self.ReloadButton)
 		# New tab button
 		self.AddTabButton = QPushButton("+")
 		self.AddTabButton.clicked.connect(self.AddTab)
 		
+		# Set Toolbar Buttons
 		
+		self.BackButton = QPushButton("<")
+		self.BackButton.clicked.connect(self.GoBack)
+		self.ForwardButton = QPushButton(">")
+		self.ForwardButton.clicked.connect(self.GoForward)
+		self.ReloadButton = QPushButton("R")
+		self.ReloadButton.clicked.connect(self.ReloadPage)
+		
+		
+		# build Toolbar
+		self.Toolbar.setLayout(self.ToolbarLayout)
+		self.ToolbarLayout.addWidget(self.BackButton)
+		self.ToolbarLayout.addWidget(self.ForwardButton)
+		self.ToolbarLayout.addWidget(self.ReloadButton)
+		self.ToolbarLayout.addWidget(self.addressbar)
 		self.ToolbarLayout.addWidget(self.AddTabButton)
 		
 		# set main view
@@ -93,6 +100,8 @@ class App(QFrame):
 
 		self.tabs.append(QWidget())
 		self.tabs[i].layout = QVBoxLayout()
+		
+		# For tab switching
 		self.tabs[i].setObjectName("tab" + str(i))
 		
 		# Open webview
@@ -121,10 +130,10 @@ class App(QFrame):
 		self.tabCount += 1
 	
 	def SwitchTab(self, i):
-		tab_data = self.tabbar.tabData(i)["object"]
+		
 		# print("tab:", tab_data)
 		if self.tabbar.tabData(i):
-			
+			tab_data = self.tabbar.tabData(i)["object"]
 			tab_content = self.findChild(QWidget, tab_data)
 			self.container.layout.setCurrentWidget(tab_content)
 			new_url = tab_content.content.url().toString()
@@ -158,31 +167,31 @@ class App(QFrame):
 		
 		count = 0
 		running = True
-		
-		current_tab = self.tabbar.tabData(self.tabbar.currentIndex())["object"]
-		if current_tab == tab_name and type == "url":
-			new_url = self.findChild(QWidget, tab_name).content.url().toString()
-			self.addressbar.setText(new_url)
-			return False
-			
-		while running:
-			tab_data_name = self.tabbar.tabData(count)
-			
-			if count >= 99:
-				running = False
+		if self.tabbar.tabData(i):
+			current_tab = self.tabbar.tabData(self.tabbar.currentIndex())["object"]
+			if current_tab == tab_name and type == "url":
+				new_url = self.findChild(QWidget, tab_name).content.url().toString()
+				self.addressbar.setText(new_url)
+				return False
 				
-			if tab_name == tab_data_name["object"]:
-				if type == "title":
+			while running:
+				tab_data_name = self.tabbar.tabData(count)
+				
+				if count >= 99:
+					running = False
 					
-					newTitle = self.findChild(QWidget, tab_name).content.title()
-					self.tabbar.setTabText(count, newTitle)
-				elif type == "icon":
-					newIcon = self.findChild(QWidget, tab_name).content.icon()
-					self.tabbar.setTabIcon(count, newIcon)
-					
-				running = False
-			else:
-				count += 1
+				if tab_name == tab_data_name["object"]:
+					if type == "title":
+						
+						newTitle = self.findChild(QWidget, tab_name).content.title()
+						self.tabbar.setTabText(count, newTitle)
+					elif type == "icon":
+						newIcon = self.findChild(QWidget, tab_name).content.icon()
+						self.tabbar.setTabIcon(count, newIcon)
+						
+					running = False
+				else:
+					count += 1
 	
 	
 	def GoBack(self):
@@ -213,4 +222,7 @@ class App(QFrame):
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	window = App()
+	
+	with open("style.css", "r") as style:
+		app.setStyleSheet(style.read())
 	sys.exit(app.exec_())
