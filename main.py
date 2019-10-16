@@ -82,6 +82,8 @@ class App(QFrame):
 		self.tabs[i].content = QWebEngineView()
 		self.tabs[i].content.load(QUrl.fromUserInput("http://google.com"))
 		
+		self.tabs[i].content.titleChanged.connect(lambda: self.SetTabText(i))
+		
 		# Add webview to tabs layout
 		self.tabs[i].layout.addWidget(self.tabs[i].content)
 		
@@ -94,23 +96,23 @@ class App(QFrame):
 		
 		# Set the tab at the top of the screen
 		self.tabbar.addTab("New Tab")
-		self.tabbar.setTabData(i, "tab" + str(i))
+		self.tabbar.setTabData(i, {"object": "tab" + str(i), "initial": i})
 		self.tabbar.setCurrentIndex(i)
-		
+
 		self.tabCount += 1
-		
+	
 	def SwitchTab(self, i):
-		tab_data = self.tabbar.tabData(i)
+		tab_data = self.tabbar.tabData(i)["object"]
 		# print("tab:", tab_data)
 		
 		tab_content = self.findChild(QWidget, tab_data)
 		self.container.layout.setCurrentWidget(tab_content)
-
+	
 	def BrowseTo(self):
 		text = self.addressbar.text()
 		
 		i = self.tabbar.currentIndex()
-		tab = self.tabbar.tabData(i)
+		tab = self.tabbar.tabData(i)["object"]
 		wv = self.findChild(QWidget, tab).content
 		
 		if "http" not in text:
@@ -123,6 +125,31 @@ class App(QFrame):
 		
 		wv.load(QUrl.fromUserInput(url))
 	
+	def SetTabText(self, i):
+		'''
+			self.tabs[i].ObjectName = tab1
+			self.tabbar.tabData(i)["object"] = tab1
+		'''
+		tab_name = self.tabs[i].objectName()
+		# tab1
+		
+		count = 0
+		running = True
+		
+		while running:
+			tab_data_name = self.tabbar.tabData(count)
+			
+			if count >= 99:
+				running = False
+				
+			if tab_name == tab_data_name["object"]:
+				newTitle = self.findChild(QWidget, tab_name).content.title()
+				self.tabbar.setTabText(count, newTitle)
+				running = False
+			else:
+				count += 1
+	
+
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	window = App()
