@@ -33,7 +33,7 @@ class App(QFrame):
 		# Create Tabs
 		self.tabbar = QTabBar(movable=True, tabsClosable=True)
 		self.tabbar.tabCloseRequested.connect(self.CloseTab)
-		
+		self.tabbar.tabBarClicked.connect(self.SwitchTab)
 		self.tabbar.setCurrentIndex(0)
 		
 		# Keep track of tabs
@@ -44,6 +44,8 @@ class App(QFrame):
 		self.Toolbar = QWidget()
 		self.ToolbarLayout = QHBoxLayout()
 		self.addressbar = AddressBar()
+		
+		self.addressbar.returnPressed.connect(self.BrowseTo)
 		
 		self.Toolbar.setLayout(self.ToolbarLayout)
 		self.ToolbarLayout.addWidget(self.addressbar)
@@ -94,8 +96,33 @@ class App(QFrame):
 		self.tabbar.addTab("New Tab")
 		self.tabbar.setTabData(i, "tab" + str(i))
 		self.tabbar.setCurrentIndex(i)
+		
+		self.tabCount += 1
+		
+	def SwitchTab(self, i):
+		tab_data = self.tabbar.tabData(i)
+		# print("tab:", tab_data)
+		
+		tab_content = self.findChild(QWidget, tab_data)
+		self.container.layout.setCurrentWidget(tab_content)
 
-
+	def BrowseTo(self):
+		text = self.addressbar.text()
+		
+		i = self.tabbar.currentIndex()
+		tab = self.tabbar.tabData(i)
+		wv = self.findChild(QWidget, tab).content
+		
+		if "http" not in text:
+			if "." not in text:
+				url = "https://www.google.com/#q=" + text
+			else:
+				url = "http://" + text
+		else:
+			url = text
+		
+		wv.load(QUrl.fromUserInput(url))
+	
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	window = App()
